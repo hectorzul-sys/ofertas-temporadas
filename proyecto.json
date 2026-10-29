@@ -1,0 +1,15 @@
+{
+  "id": "40.02",
+  "nombre": "ofertas-temporadas",
+  "taller": "Colección y vitrina",
+  "estado": "activo",
+  "ruta": "D:\\Claude\\40-coleccion\\ofertas-temporadas",
+  "origen": "incubadora 2026-10-28-bot-ofertas-temporadas (plan maestro 2026-10-24-plan-maestro)",
+  "repositorio": "https://github.com/hectorzul-sys/ofertas-temporadas (público)",
+  "nota": "Bot familiar de ofertas (Promodescuentos → Telegram). Para Hector y su familia; nada de Colección, Entre Dos ni Cristal. Lo despierta ..\\ofertas\\despertador (segunda llamada).",
+  "consume": [],
+  "entrega": [],
+  "en_que_vamos": "Bot listo y corriendo en GitHub; falta la llave del bot para que lleguen los avisos",
+  "siguiente": "Fase 0 de Hector (GUIA-FASE-0.md) y juzgar 10 avisos antes del corte del 6-nov",
+  "actualizado": "2026-10-29"
+}
