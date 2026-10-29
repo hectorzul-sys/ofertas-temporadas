@@ -1,0 +1,62 @@
+# categorias.yaml — qué ofertas de Promodescuentos nos interesan.
+# Hector no lo edita a mano: le dice a Claude qué cambiar ("agrega freidora a Hogar").
+#
+# Cómo decide el bot (en cada oferta que trae Promodescuentos):
+# - Entra a una categoría si viene de una de sus categorías de Promodescuentos o tiene una de sus palabras,
+#   no tiene nada de "excluir", tiene los grados mínimos y no pasa del precio máximo.
+# - AVISO AL MOMENTO (cuenta para el tope del día) si además tiene una de las palabras de la categoría,
+#   o si la comunidad la calentó muchísimo (grados_aviso_directo).
+# - Lo demás que entra va al RESUMEN de las 21:00 (las mejores por grados).
+# - Los grados solo vienen en el feed de "tendencias"; las ofertas recién publicadas no traen grados
+#   y solo sirven para la lista de productos (productos.yaml).
+# - El "% de descuento" no se usa este año: el feed no trae un precio anterior fiable.
+
+general:
+  avisos_por_dia: 5             # inmediatos; el resto va al resumen
+  avisos_por_dia_temporada: 10  # Buen Fin, Black Friday, Cyber Monday
+  temporadas:                   # en estas fechas sube el tope
+    - {nombre: Buen Fin, desde: 2026-11-13, hasta: 2026-11-17}
+    - {nombre: Black Friday y Cyber Monday, desde: 2026-11-27, hasta: 2026-11-30}
+  no_repetir_dias: 7            # la misma oferta no vuelve en 7 días, salvo que baje 5 % o más
+  baja_para_repetir: 5          # %
+  resumen_hora: "21:00"
+  zona: America/Mexico_City
+  resumen_max: 15               # ofertas en el resumen (además de los avisos del día)
+  grados_minimos: 100           # filtro de la comunidad; cada categoría puede cambiarlo
+  grados_aviso_directo: 600     # tan calientes que avisan aunque no tengan palabra
+  caro_profeco: 3000            # desde este precio el aviso recuerda comparar en Profeco
+  excluir: [reacondicionado, reacondicionada, seminuevo, usado]
+
+categorias:
+  Tecnología:
+    promodescuentos: [Tecnología]
+    palabras: [ssd, monitor, audifonos, audífonos, router, laptop, tablet, smartwatch]
+    excluir: [funda, mica, protector de pantalla]
+    precio_max: 15000
+    grados_minimos: 150
+  Videojuegos y consolas:
+    promodescuentos: [Videojuegos]
+    palabras: [ps5, playstation, nintendo switch, switch 2, xbox series, control dualsense, control xbox]
+    precio_max: 12000
+  Hogar y electrodomésticos:
+    promodescuentos: [Hogar]
+    palabras: [freidora, aspiradora, licuadora, pantalla, refrigerador, lavadora, microondas, cafetera]
+    precio_max: 12000
+  Herramientas y taller:
+    promodescuentos: [Jardín y hazlo tú mismo]
+    palabras: [taladro, esmeril, juego de llaves, rotomartillo, caja de herramientas, atornillador]
+    precio_max: 5000
+  Juguetes y coleccionables:
+    promodescuentos: [Familia, bebés y niños]
+    palabras: [hot wheels, lego, funko, pop mart]
+    precio_max: 3000
+    grados_minimos: 60          # menos votos en este tema; avisar antes
+  Ropa y calzado:
+    promodescuentos: [Ropa y accesorios]
+    palabras: [chamarra]
+    precio_max: 2500
+    grados_minimos: 200         # mucho ruido
+  Súper y despensa:
+    promodescuentos: [Abarrotes y alimentos]
+    palabras: [detergente, papel higienico, papel higiénico, aceite de oliva]
+    precio_max: 1500

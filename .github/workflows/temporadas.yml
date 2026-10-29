@@ -1,0 +1,74 @@
+name: Ofertas de temporada
+
+on:
+  # El horario lo lleva el despertador de Cloudflare (vive en ..\ofertas\despertador del monitor K-pop):
+  # cada hora al minuto 17 de 7:00 a 23:00 CDMX. El resumen sale en la primera corrida desde las 21:00.
+  # Respaldo: el reloj de GitHub (se salta muchas corridas, por eso no es el principal). El propio bot
+  # no vuelve a leer Promodescuentos si la última lectura fue hace menos de 45 min.
+  schedule:
+    - cron: "47 0-5,13-23/2 * * *"
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "normal = revisar ofertas · resumen = mandar el resumen ya · prueba = mensaje de ejemplo · ensayo = mostrar en el log lo que mandaría, sin enviar ni guardar"
+        type: choice
+        default: normal
+        options: [normal, resumen, prueba, ensayo]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporadas
+  cancel-in-progress: false
+
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      PRODUCTOS: ${{ secrets.PRODUCTOS }}
+      DATOS_CLAVE: ${{ secrets.DATOS_CLAVE }}
+      MODO: ${{ inputs.modo || 'normal' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - run: python -m unittest -q
+
+      - name: Sin clave no se guarda nada (el repo es público)
+        run: test -n "$DATOS_CLAVE" || { echo "Falta el secreto DATOS_CLAVE"; exit 1; }
+
+      - name: Mensaje de prueba
+        if: env.MODO == 'prueba'
+        run: python -m src.main --test-telegram
+
+      - name: Ensayo (no envía ni guarda)
+        if: env.MODO == 'ensayo'
+        run: python -m src.main --dry-run --digest-now
+
+      - name: Revisar ofertas y avisar
+        if: env.MODO == 'normal' || env.MODO == 'resumen'
+        run: python -m src.main ${{ env.MODO == 'resumen' && '--digest-now' || '' }}
+
+      - name: Guardar lo visto (cifrado)
+        if: env.MODO == 'normal' || env.MODO == 'resumen'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "Sin cambios"
+            exit 0
+          fi
+          git commit -m "Lo visto $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git pull --rebase
+          git push

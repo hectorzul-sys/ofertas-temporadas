@@ -1,0 +1,12 @@
+# productos.ejemplo.yaml — formato de la lista privada de productos.
+# La lista de verdad es productos.yaml: vive solo en el PC de Hector (fuera de git) y Claude la sube
+# como secreto de GitHub con:  gh secret set PRODUCTOS < productos.yaml
+# Cada producto avisa siempre que aparezca a su precio (no cuenta para el tope del día ni pide grados).
+productos:
+  - nombre: "Freidora de aire 5 L"
+    palabras: [freidora, 5 l]        # todas deben aparecer en el título de la oferta
+    precio_objetivo: 1200
+  - nombre: "SSD 1 TB"
+    palabras: [ssd, 1tb]
+    precio_objetivo: 1100
+    keepa: B0XXXXXXXX                # opcional: ASIN de Amazon para enlazar su gráfica en Keepa
