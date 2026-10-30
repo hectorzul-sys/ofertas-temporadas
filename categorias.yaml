@@ -31,9 +31,8 @@ general:
             pasta dental, cepillo dental, papel higienico, toallitas, panales, perfume, maquillaje,
             labial, cerveza, tequila, vino, whisky, mezcal, licor, comida, croquetas]
 
-# Lo que más le importa a la familia: electrodomésticos y tecnología.
-# Hogar, Herramientas y Juguetes van SOLO por palabras (sus categorías de Promodescuentos traen mucha
-# cosa chica: fundas, adornos, pañales…). Tecnología y Videojuegos sí siguen toda su categoría.
+# Lo que le importa a la familia (Hector, 29-oct): electrodomésticos, tecnología, hogar y muebles,
+# herramientas y taller, ropa. Fuera: súper y despensa. Juguetes va solo por palabras (su categoría trae pañales).
 categorias:
   Electrodomésticos y pantallas:
     palabras: [pantalla, television, televisor, smart tv, tv, refrigerador, refri, lavadora, secadora,
@@ -53,12 +52,23 @@ categorias:
     palabras: [ps5, playstation, nintendo switch, switch 2, xbox series, control dualsense, control xbox]
     precio_max: 15000
     grados_minimos: 150
+  Hogar y muebles:
+    promodescuentos: [Hogar]
+    palabras: [sofa, sillon, colchon, base de cama, cama, comedor, escritorio, silla, ropero, closet, librero,
+               mesa, buro, cajonera, organizador, repisa, lampara, cortina]
+    precio_max: 25000
   Herramientas y taller:
-    excluir: [accesorio, accesorios, broca, brocas]
+    promodescuentos: [Jardín y hazlo tú mismo]
+    excluir: [accesorios para, kit de accesorios, broca, brocas]
     palabras: [taladro, esmeril, juego de llaves, rotomartillo, caja de herramientas, atornillador, sierra,
-               compresor, hidrolavadora]
-    precio_max: 8000
+               compresor, hidrolavadora, pulidora, soldadora, multimetro, banco de trabajo, escalera, pistola de calor]
+    precio_max: 10000
   Juguetes y coleccionables:
     palabras: [hot wheels, lego, funko, pop mart]
     precio_max: 3000
     grados_minimos: 60          # menos votos en este tema; avisar antes
+  Ropa y calzado:
+    promodescuentos: [Ropa y accesorios]
+    palabras: [tenis, chamarra]
+    precio_max: 3000
+    grados_minimos: 200         # mucho ruido: solo lo muy votado

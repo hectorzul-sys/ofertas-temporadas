@@ -72,7 +72,7 @@ class FiltroTest(unittest.TestCase):
     def test_classify(self):
         c = lambda i: filtro.classify(self.items[i], self.cfg, PRODUCTOS)
         self.assertEqual(c("100")["tipo"], "aviso")       # palabra "freidora"
-        self.assertIsNone(c("101"))                       # Hogar sin palabra: ya no entra (29-oct)
+        self.assertEqual(c("101")["tipo"], "resumen")     # Hogar sin palabra: al resumen
         self.assertEqual(c("102")["tipo"], "producto")    # lista privada, sin grados
         self.assertIsNone(c("103"))                       # "funda" excluida en Tecnología
         self.assertIsNone(c("104"))                       # categoría que no seguimos
