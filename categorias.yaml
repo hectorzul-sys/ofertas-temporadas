@@ -25,38 +25,40 @@ general:
   grados_minimos: 100           # filtro de la comunidad; cada categoría puede cambiarlo
   grados_aviso_directo: 600     # tan calientes que avisan aunque no tengan palabra
   caro_profeco: 3000            # desde este precio el aviso recuerda comparar en Profeco
-  excluir: [reacondicionado, reacondicionada, seminuevo, usado]
+  excluir: [reacondicionado, reacondicionada, seminuevo, usado,
+            # Decidido por Hector el 29-oct: nada de jabones, súper ni cosas de uso diario
+            jabon, shampoo, champu, acondicionador, detergente, suavizante, cloro, desodorante, crema,
+            pasta dental, cepillo dental, papel higienico, toallitas, panales, perfume, maquillaje,
+            labial, cerveza, tequila, vino, whisky, mezcal, licor, comida, croquetas]
 
+# Lo que más le importa a la familia: electrodomésticos y tecnología.
+# Hogar, Herramientas y Juguetes van SOLO por palabras (sus categorías de Promodescuentos traen mucha
+# cosa chica: fundas, adornos, pañales…). Tecnología y Videojuegos sí siguen toda su categoría.
 categorias:
+  Electrodomésticos y pantallas:
+    palabras: [pantalla, television, televisor, smart tv, tv, refrigerador, refri, lavadora, secadora,
+               estufa, horno, microondas, freidora, licuadora, batidora, cafetera, aspiradora,
+               robot aspiradora, aire acondicionado, minisplit, ventilador, calentador, boiler,
+               lavavajillas, plancha, purificador, olla de presion, olla electrica, extractor, parrilla electrica]
+    excluir: [funda, protector, soporte, control remoto, filtro, repuesto, accesorio, accesorios]
+    precio_max: 25000
   Tecnología:
     promodescuentos: [Tecnología]
-    palabras: [ssd, monitor, audifonos, audífonos, router, laptop, tablet, smartwatch]
-    excluir: [funda, mica, protector de pantalla]
-    precio_max: 15000
+    palabras: [ssd, monitor, audifonos, router, laptop, tablet, smartwatch, celular, impresora, bocina]
+    excluir: [funda, mica, protector de pantalla, cable, cargador]
+    precio_max: 25000
     grados_minimos: 150
   Videojuegos y consolas:
     promodescuentos: [Videojuegos]
     palabras: [ps5, playstation, nintendo switch, switch 2, xbox series, control dualsense, control xbox]
-    precio_max: 12000
-  Hogar y electrodomésticos:
-    promodescuentos: [Hogar]
-    palabras: [freidora, aspiradora, licuadora, pantalla, refrigerador, lavadora, microondas, cafetera]
-    precio_max: 12000
+    precio_max: 15000
+    grados_minimos: 150
   Herramientas y taller:
-    promodescuentos: [Jardín y hazlo tú mismo]
-    palabras: [taladro, esmeril, juego de llaves, rotomartillo, caja de herramientas, atornillador]
-    precio_max: 5000
+    excluir: [accesorio, accesorios, broca, brocas]
+    palabras: [taladro, esmeril, juego de llaves, rotomartillo, caja de herramientas, atornillador, sierra,
+               compresor, hidrolavadora]
+    precio_max: 8000
   Juguetes y coleccionables:
-    promodescuentos: [Familia, bebés y niños]
     palabras: [hot wheels, lego, funko, pop mart]
     precio_max: 3000
     grados_minimos: 60          # menos votos en este tema; avisar antes
-  Ropa y calzado:
-    promodescuentos: [Ropa y accesorios]
-    palabras: [chamarra]
-    precio_max: 2500
-    grados_minimos: 200         # mucho ruido
-  Súper y despensa:
-    promodescuentos: [Abarrotes y alimentos]
-    palabras: [detergente, papel higienico, papel higiénico, aceite de oliva]
-    precio_max: 1500

@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       modo:
-        description: "normal = revisar ofertas · resumen = mandar el resumen ya · prueba = mensaje de ejemplo · ensayo = mostrar en el log lo que mandaría, sin enviar ni guardar"
+        description: "normal = revisar ofertas · resumen = mandar el resumen ya · prueba = mensaje de ejemplo · ensayo = mostrar en el log lo que mandaría, sin enviar ni guardar · conectar / desconectar = el bot contesta preguntas (o deja de hacerlo)"
         type: choice
         default: normal
-        options: [normal, resumen, prueba, ensayo]
+        options: [normal, resumen, prueba, ensayo, conectar, desconectar]
 
 permissions:
   contents: write
@@ -31,6 +31,8 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       PRODUCTOS: ${{ secrets.PRODUCTOS }}
       DATOS_CLAVE: ${{ secrets.DATOS_CLAVE }}
+      WEBHOOK_SECRETO: ${{ secrets.WEBHOOK_SECRETO }}
+      CONTESTADOR_URL: https://ofertas-familia-contestador.hector-zulm.workers.dev
       MODO: ${{ inputs.modo || 'normal' }}
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +45,12 @@ jobs:
       - run: pip install -r requirements.txt
 
       - run: python -m unittest -q
+
+      - run: node --test contestador/buscar.test.mjs
+
+      - name: Conectar o desconectar el contestador
+        if: env.MODO == 'conectar' || env.MODO == 'desconectar'
+        run: python -m src.main ${{ env.MODO == 'conectar' && '--conectar "$CONTESTADOR_URL"' || '--desconectar' }}
 
       - name: Sin clave no se guarda nada (el repo es público)
         run: test -n "$DATOS_CLAVE" || { echo "Falta el secreto DATOS_CLAVE"; exit 1; }

@@ -20,7 +20,18 @@ RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <title><![CDATA[Amazon: SSD Ejemplo 1 TB NVMe]]></title>
 <link>https://www.promodescuentos.com/ofertas/ssd-102</link><pubDate>Wed, 28 Oct 2026 20:00:00 -0600</pubDate></item>
 <item><category><![CDATA[Tecnología]]></category><pepper:merchant name="Mobo" price="$159"/>
-<title><![CDATA[900° - Mobo: Funda para monitor]]></title>
+<title><![CDATA[900° - Mobo: Funda para monitor]]></title></item>
+<item><category><![CDATA[Tecnología]]></category><pepper:merchant name="Liverpool" price="$2,500"/>
+<title><![CDATA[160° - Liverpool: Bocina Ejemplo]]></title>
+<link>https://www.promodescuentos.com/ofertas/bocina-105</link></item>
+<item><category><![CDATA[Tecnología]]></category><pepper:merchant name="Amazon" price="$900"/>
+<title><![CDATA[170° - Amazon: Teclado Ejemplo]]></title>
+<link>https://www.promodescuentos.com/ofertas/teclado-106</link></item>
+<item><category><![CDATA[Salud y belleza]]></category><pepper:merchant name="Amazon" price="$90"/>
+<title><![CDATA[700° - Amazon: Jabón líquido para lavadora]]></title>
+<link>https://www.promodescuentos.com/ofertas/jabon-107</link></item>
+<item><category><![CDATA[Tecnología]]></category><pepper:merchant name="Mobo" price="$159"/>
+<title><![CDATA[900° - Mobo: Funda para monitor otra]]></title>
 <link>https://www.promodescuentos.com/ofertas/funda-103</link><pubDate>Wed, 28 Oct 2026 20:00:00 -0600</pubDate></item>
 <item><category><![CDATA[Viajes]]></category>
 <title><![CDATA[50° - Vuelo barato]]></title>
@@ -61,10 +72,13 @@ class FiltroTest(unittest.TestCase):
     def test_classify(self):
         c = lambda i: filtro.classify(self.items[i], self.cfg, PRODUCTOS)
         self.assertEqual(c("100")["tipo"], "aviso")       # palabra "freidora"
-        self.assertEqual(c("101")["tipo"], "resumen")     # solo la categoría
+        self.assertIsNone(c("101"))                       # Hogar sin palabra: ya no entra (29-oct)
         self.assertEqual(c("102")["tipo"], "producto")    # lista privada, sin grados
         self.assertIsNone(c("103"))                       # "funda" excluida en Tecnología
         self.assertIsNone(c("104"))                       # categoría que no seguimos
+        self.assertEqual(c("105")["tipo"], "aviso")       # palabra "bocina"
+        self.assertEqual(c("106")["tipo"], "resumen")     # Tecnología sin palabra
+        self.assertIsNone(c("107"))                       # "jabón" excluido aunque diga "lavadora"
 
     def test_no_repeat(self):
         sent, o = {}, self.items["100"]

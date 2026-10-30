@@ -25,7 +25,9 @@ Para Hector y su familia. No es parte de Colección ni de Entre Dos; nada de Cri
 - GitHub Actions en **repo público** `hectorzul-sys/ofertas-temporadas` (los minutos privados son de
   la cuenta y los usa el K-pop). Disparo con `workflow_dispatch` desde el despertador de Cloudflare
   que vive en `..\ofertas\despertador` (segunda llamada; no añadir cron triggers). Respaldo: `schedule` de GitHub.
-- Telegram: el mismo bot del K-pop (@ofertas_kpop_hector_bot), con su propio `chat_id`.
+- Telegram: **bot propio de la familia** (decidido por Hector el 29-oct-2026, porque lo pasará a su familia),
+  aparte de @ofertas_kpop_hector_bot. Su llave va solo en el secreto `TELEGRAM_BOT_TOKEN` de este repo.
+  Primero al chat privado de Hector (1851127359, después de que toque "Iniciar"); desde el 7-nov, al grupo de la familia.
 - Secretos en GitHub: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `PRODUCTOS` (lista privada), `DATOS_CLAVE`.
 
 ## Archivos que se editan

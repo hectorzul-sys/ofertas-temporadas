@@ -5,6 +5,8 @@
   python -m src.main --dry-run       muestra lo que mandaría, sin enviar ni guardar
   python -m src.main --test-telegram mensaje de prueba con una oferta real
   python -m src.main --get-chat-id   lista los chats que le escribieron al bot
+  python -m src.main --conectar URL  manda los mensajes del bot al contestador (worker de Cloudflare)
+  python -m src.main --desconectar   el bot deja de contestar preguntas (vuelve a funcionar --get-chat-id)
 """
 
 import argparse
@@ -107,8 +109,8 @@ def digest_messages(cfg, day, state):
 
 
 def telegram_from_env():
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    token = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip()  # el secreto puede traer un salto de línea
+    chat_id = (os.environ.get("TELEGRAM_CHAT_ID") or "").strip()
     if not token or not chat_id:
         return None
     return TelegramNotifier(token, chat_id)
@@ -130,7 +132,7 @@ def send_test(cfg, productos):
 
 
 def get_chat_id():
-    token = os.environ.get("TELEGRAM_BOT_TOKEN") or sys.exit("Falta TELEGRAM_BOT_TOKEN")
+    token = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip() or sys.exit("Falta TELEGRAM_BOT_TOKEN")
     resp = requests.get(f"https://api.telegram.org/bot{token}/getUpdates", timeout=30)
     resp.raise_for_status()
     chats = {}
@@ -144,12 +146,26 @@ def get_chat_id():
         print(f"TELEGRAM_CHAT_ID={chat_id}   ({who})")
 
 
+def set_webhook(url):
+    """Telegram manda cada mensaje del bot al contestador. Sin URL, lo desconecta."""
+    token = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip() or sys.exit("Falta TELEGRAM_BOT_TOKEN")
+    payload = {"url": url or "", "allowed_updates": ["message"], "drop_pending_updates": True}
+    if url:
+        payload["secret_token"] = (os.environ.get("WEBHOOK_SECRETO") or "").strip() or sys.exit("Falta WEBHOOK_SECRETO")
+    resp = requests.post(f"https://api.telegram.org/bot{token}/setWebhook", json=payload, timeout=30)
+    if not resp.ok:
+        sys.exit(f"Telegram respondió {resp.status_code}: {resp.text[:300]}")
+    print("Contestador conectado." if url else "Contestador desconectado.")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--digest-now", action="store_true")
     parser.add_argument("--test-telegram", action="store_true")
     parser.add_argument("--get-chat-id", action="store_true")
+    parser.add_argument("--conectar", metavar="URL")
+    parser.add_argument("--desconectar", action="store_true")
     parser.add_argument("--force", action="store_true", help="leer aunque la última lectura fue hace menos de 45 min")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -158,6 +174,8 @@ def main():
     productos = load_products()
     if args.get_chat_id:
         return get_chat_id()
+    if args.conectar or args.desconectar:
+        return set_webhook(None if args.desconectar else args.conectar)
     if args.test_telegram:
         return send_test(cfg, productos)
 

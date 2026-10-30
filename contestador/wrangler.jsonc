@@ -1,0 +1,11 @@
+{
+  // Contestador del bot de ofertas de la familia (@ofertas_buenasbot). Gratis (plan Free de Workers).
+  // Publicar: npx.cmd wrangler deploy (desde esta carpeta).
+  // Secreto: npx.cmd wrangler secret put WEBHOOK_SECRETO (Claude lo pone; mismo valor que el secreto de GitHub).
+  // Conectarlo al bot: en GitHub, Actions → "Ofertas de temporada" → Run workflow → modo "conectar".
+  "name": "ofertas-familia-contestador",
+  "main": "index.js",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "observability": { "enabled": true }
+}

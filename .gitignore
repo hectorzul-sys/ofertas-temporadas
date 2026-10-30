@@ -6,3 +6,4 @@ data/*.tmp
 # Privado: nunca al repo público
 productos.yaml
 .clave
+.wrangler/

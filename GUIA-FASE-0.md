@@ -6,12 +6,16 @@ Cuando termines un paso, díselo a Claude ("ya hice el 1") y él sigue.
 
 ## 1. Lo que desbloquea el bot (lo más importante, 5 min)
 
-**1a. La llave del bot de Telegram** (sin ella no te llega ningún aviso):
-1. En Telegram (en la PC), abre **@BotFather** → escribe `/mybots` → elige **@ofertas_kpop_hector_bot** → **API Token**.
-2. Toca el token para **copiarlo** (no lo pegues en ningún lado).
-3. Dile a Claude: **"ya copié la llave del bot"**. Claude la sube como secreto directo del portapapeles
-   (`Get-Clipboard | gh secret set TELEGRAM_BOT_TOKEN -R hectorzul-sys/ofertas-temporadas`) y te manda un mensaje de prueba.
+**1a. Crear el bot nuevo de la familia** (decidido el 29-oct: bot propio, aparte del K-pop):
+1. En Telegram (en la PC), abre **@BotFather** → escribe `/newbot`.
+2. Nombre que verá la familia: por ejemplo **Ofertas familia**.
+3. Usuario (tiene que acabar en `bot`): por ejemplo **ofertas_familia_hector_bot** (si está ocupado, prueba otro).
+4. BotFather te da la llave: toca la llave para **copiarla** (no la pegues en ningún lado).
+5. Dile a Claude: **"ya copié la llave del bot nuevo"**. Claude la sube como secreto directo del portapapeles
+   (`Get-Clipboard | gh secret set TELEGRAM_BOT_TOKEN -R hectorzul-sys/ofertas-temporadas`).
    Después copia cualquier otra cosa para que la llave no se quede en el portapapeles.
+6. Abre el chat con tu bot nuevo y toca **Iniciar** (Start): sin eso, el bot no puede escribirte.
+   Claude te manda un mensaje de prueba.
 
 **1b. Añadir el repo nuevo a tu token de GitHub** (para que el despertador de Cloudflare lo despierte cada hora):
 1. GitHub → tu foto → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**.
@@ -40,10 +44,9 @@ Guarda en favoritos **https://qqp.profeco.gob.mx/** (Quién es Quién en los Pre
 en el Buen Fin, compara ahí. Los avisos del bot de más de $3,000 ya te lo recuerdan.
 
 ## 6. Grupo de la familia (5 min; se usa a partir del 7-nov)
-1. En Telegram: **Nuevo grupo** → ponle nombre (ej. "Ofertas familia") → añade a la familia y a **@ofertas_kpop_hector_bot**.
+1. En Telegram: **Nuevo grupo** → ponle nombre (ej. "Ofertas familia") → añade a la familia y a **tu bot nuevo** (el del paso 1a).
 2. Escribe cualquier cosa en el grupo ("hola bot").
-3. Opcional: en @BotFather → `/mybots` → el bot → **Edit Bot** → **Edit Name** → "Ofertas familia", para que no se vea "kpop".
-4. Dile a Claude "ya está el grupo": él saca el `chat_id` solo. **Los avisos siguen yendo solo a ti hasta el corte del 6-nov.**
+3. Dile a Claude "ya está el grupo": él saca el `chat_id` solo. **Los avisos siguen yendo solo a ti hasta el corte del 6-nov.**
 
 ## 7. Juzgar 10 avisos (del 30-oct al 6-nov)
 Cuando te lleguen, dile a Claude cuáles te sirvieron y cuáles no ("el 3 no, no queremos alcohol").
