@@ -24,8 +24,8 @@ grupo de la familia 7-12 nov (ensayo 11-nov, nada nuevo desde el 9, congelar el 
 - Worker `ofertas-familia-contestador` (carpeta `contestador\`) **publicado** en https://ofertas-familia-contestador.hector-zulm.workers.dev.
   Responde por webhook dentro de la misma contestación HTTP (no necesita la llave del bot). Busca en los 2 feeds (caché 10 min).
   Privado: cualquier texto ("televisores"); grupos: `/buscar …`; `/id` da el chat_id (con webhook ya no sirve `--get-chat-id`).
-- **Falta (permiso bloqueado):** crear `WEBHOOK_SECRETO` (mismo valor en `gh secret set` y `wrangler secret put`; sin él el worker rechaza todo, 401),
-  subir a GitHub los commits locales y correr el workflow en modo `conectar`.
+- 29-oct (con el sí de Hector): `WEBHOOK_SECRETO` puesto en GitHub y Cloudflare (sin él responde 401, comprobado),
+  commits subidos y workflow en modo `conectar` correcto. **Comprobado por Hector: el bot contesta "televisores".**
 
 ## Sesiones
 - 2026-10-29 — Categorías enfocadas (decisión de Hector: nada de jabones ni súper; sobre todo electrodomésticos): fuera Súper y Ropa;
