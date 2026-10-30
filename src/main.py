@@ -152,10 +152,25 @@ def set_webhook(url):
     payload = {"url": url or "", "allowed_updates": ["message"], "drop_pending_updates": True}
     if url:
         payload["secret_token"] = (os.environ.get("WEBHOOK_SECRETO") or "").strip() or sys.exit("Falta WEBHOOK_SECRETO")
-    resp = requests.post(f"https://api.telegram.org/bot{token}/setWebhook", json=payload, timeout=30)
-    if not resp.ok:
-        sys.exit(f"Telegram respondió {resp.status_code}: {resp.text[:300]}")
-    print("Contestador conectado." if url else "Contestador desconectado.")
+    api = f"https://api.telegram.org/bot{token}"
+    calls = [("setWebhook", payload)]
+    if url:  # menú de comandos y descripción que ve la familia al abrir el bot
+        calls += [
+            ("setMyCommands", {"commands": [
+                {"command": "buscar", "description": "Busca ofertas: /buscar televisores"},
+                {"command": "ayuda", "description": "Qué sé hacer"},
+                {"command": "id", "description": "Número de este chat (para Claude)"},
+            ]}),
+            ("setMyShortDescription", {"short_description": "Ofertas de electrodomésticos, tecnología y hogar para la familia."}),
+            ("setMyDescription", {"description": "Te aviso de las mejores ofertas de Promodescuentos (electrodomésticos, "
+                                                "tecnología, hogar, herramientas…) y a las 21:00 mando un resumen. "
+                                                "Escríbeme lo que buscas, por ejemplo: televisores."}),
+        ]
+    for method, body in calls:
+        resp = requests.post(f"{api}/{method}", json=body, timeout=30)
+        if not resp.ok:
+            sys.exit(f"Telegram respondió {resp.status_code} en {method}: {resp.text[:300]}")
+    print("Contestador conectado (con menú y descripción)." if url else "Contestador desconectado.")
 
 
 def main():
