@@ -17,7 +17,7 @@ desde el 28-oct. **Todavía no manda avisos**: falta la llave del bot.
 
 **Qué falta (de Hector):** ver `GUIA-FASE-0.md`: crear el bot nuevo en BotFather, copiar su llave y tocar "Iniciar", repo nuevo en su token de GitHub
 y el sí para publicar el despertador (ya editado, sin publicar), Keepa, alertas, favoritos, Profeco, grupo, juzgar 10 avisos.
-**Qué falta (de Claude):** subir la llave y mandar la prueba; publicar el despertador; ajustar con los 10 avisos; corte el 6-nov;
+**Qué falta (de Claude):** publicar el despertador (cuando Hector añada el repo a su token y dé el sí); llenar la lista de compras; ajustar con los 10 avisos; corte el 6-nov;
 grupo de la familia 7-12 nov (ensayo 11-nov, nada nuevo desde el 9, congelar el 12).
 
 ## Contestador (29-oct)
@@ -28,7 +28,7 @@ grupo de la familia 7-12 nov (ensayo 11-nov, nada nuevo desde el 9, congelar el 
   commits subidos y workflow en modo `conectar` correcto. **Comprobado por Hector: el bot contesta "televisores".**
 
 ## Sesiones
-- 2026-10-29 — Categorías enfocadas (decisión de Hector: nada de jabones ni súper; sobre todo electrodomésticos): fuera Súper y Ropa;
-  Hogar/Herramientas/Juguetes solo por palabras; lista de excluir de uso diario. Contestador programado (5 pruebas JS) y publicado.
-- 2026-10-29 — Bot nuevo de la familia @ofertas_buenasbot ("Ofertas"): llave subida como secreto (sin salto de línea) y prueba enviada a Hector con éxito. Ya manda avisos reales a su chat. Sin subir a GitHub (permiso bloqueado): textos del bot nuevo y `strip()` de la llave en `src/main.py`.
+- 2026-10-29 — Categorías enfocadas (decisión de Hector: nada de jabones ni súper; sobre todo electrodomésticos): al final (2.º ajuste) solo fuera Súper y despensa;
+  vuelven Hogar y muebles, Herramientas completas y Ropa (200°); Juguetes solo por palabras; lista de excluir de uso diario. Contestador programado (5 pruebas JS) y publicado.
+- 2026-10-29 — Bot nuevo de la familia @ofertas_buenasbot ("Ofertas"): llave subida como secreto (sin salto de línea) y prueba enviada a Hector con éxito. Ya manda avisos reales a su chat. Textos y `strip()` de la llave subidos después con el sí de Hector.
 - 2026-10-28/29 — Desde la incubadora (idea 2026-10-28-bot-ofertas-temporadas). Carpeta, CLAUDE.md, bot completo, repo público, secretos, primera corrida, despertador editado (sin publicar: permiso bloqueado), guía de la Fase 0.
