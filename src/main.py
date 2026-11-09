@@ -42,6 +42,28 @@ def load_products(path="productos.yaml"):
     return (data or {}).get("productos") or []
 
 
+def remote_products(state):
+    """Lista apuntada desde Telegram (/quiero), guardada por el contestador. Si no contesta, uso la última que leí."""
+    url = (os.environ.get("CONTESTADOR_URL") or "").rstrip("/")
+    secret = (os.environ.get("WEBHOOK_SECRETO") or "").strip()
+    if not url or not secret:
+        return state.get("lista_telegram", [])
+    try:
+        resp = requests.get(f"{url}/lista", headers={"X-Clave": secret, "User-Agent": "ofertas-temporadas/1.0"}, timeout=20)
+        resp.raise_for_status()
+        items = [i for i in resp.json().get("items", []) if i.get("grupos")]
+    except (requests.RequestException, ValueError) as err:
+        log.warning("No pude leer la lista de Telegram (%s); uso la última guardada.", str(err)[:120])
+        return state.get("lista_telegram", [])
+    state["lista_telegram"] = items
+    log.info("Lista de Telegram: %d cosas", len(items))
+    return items
+
+
+def label(p):
+    return f"{p['nombre']} (para {p['para']})" if p.get("para") else p["nombre"]
+
+
 def new_day(today):
     return {"fecha": today.isoformat(), "avisos": [], "candidatos": {}, "errores": [], "vistas": 0}
 
@@ -49,7 +71,7 @@ def new_day(today):
 def snapshot(offer, c):
     keep = ("id", "titulo", "grados", "tienda", "precio", "categoria", "link")
     snap = {k: offer[k] for k in keep}
-    snap["grupo"] = c["producto"]["nombre"] if c["producto"] else c["categoria"]
+    snap["grupo"] = label(c["producto"]) if c["producto"] else c["categoria"]
     snap["tipo"] = c["tipo"]
     return snap
 
@@ -59,6 +81,12 @@ def plan_alerts(offers, cfg, productos, state, today, prices_before):
     day = state["dia"]
     cap = filtro.daily_cap(cfg, today)
     used = sum(1 for a in day["avisos"] if a["tipo"] == "aviso")
+    # Algo vago como "televisor 4k" puede salir muchas veces: al momento solo las primeras; las demás, al resumen.
+    per_product = cfg["general"].get("avisos_por_producto", 3)
+    by_product = {}
+    for a in day["avisos"]:
+        if a["tipo"] == "producto":
+            by_product[a["grupo"]] = by_product.get(a["grupo"], 0) + 1
     alerts = []
     ordered = sorted(offers, key=lambda o: -(o["grados"] or 0))
     for o in ordered:
@@ -66,8 +94,11 @@ def plan_alerts(offers, cfg, productos, state, today, prices_before):
         if not c:
             continue
         if c["tipo"] in ("producto", "aviso") and filtro.should_alert(state["enviados"], o, today, cfg):
-            if c["tipo"] == "producto" or used < cap:
+            name = label(c["producto"]) if c["producto"] else None
+            if (c["tipo"] == "producto" and by_product.get(name, 0) < per_product) or (c["tipo"] == "aviso" and used < cap):
                 used += c["tipo"] == "aviso"
+                if name:
+                    by_product[name] = by_product.get(name, 0) + 1
                 alerts.append({**c, "oferta": o, "antes": historial.seen_before(prices_before, o)})
                 continue
         if any(a["id"] == o["id"] for a in day["avisos"]):
@@ -149,7 +180,7 @@ def get_chat_id():
 def set_webhook(url):
     """Telegram manda cada mensaje del bot al contestador. Sin URL, lo desconecta."""
     token = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip() or sys.exit("Falta TELEGRAM_BOT_TOKEN")
-    payload = {"url": url or "", "allowed_updates": ["message"], "drop_pending_updates": True}
+    payload = {"url": url or "", "allowed_updates": ["message", "callback_query"], "drop_pending_updates": True}
     if url:
         payload["secret_token"] = (os.environ.get("WEBHOOK_SECRETO") or "").strip() or sys.exit("Falta WEBHOOK_SECRETO")
     api = f"https://api.telegram.org/bot{token}"
@@ -158,6 +189,9 @@ def set_webhook(url):
         calls += [
             ("setMyCommands", {"commands": [
                 {"command": "buscar", "description": "Busca ofertas: /buscar televisores"},
+                {"command": "quiero", "description": "Apunta algo: /quiero televisor 4k de 5000 a 9000"},
+                {"command": "lista", "description": "Lo que tenemos apuntado"},
+                {"command": "borrar", "description": "Quita algo de la lista: /borrar 3"},
                 {"command": "ayuda", "description": "Qué sé hacer"},
                 {"command": "id", "description": "Número de este chat (para Claude)"},
             ]}),
@@ -200,6 +234,7 @@ def main():
     state = storage.load(STATE_FILE, {})
     state.setdefault("enviados", {})
     state.setdefault("dia", new_day(today))
+    productos = productos + remote_products(state)
     notifier = None if args.dry_run else telegram_from_env()
     if not notifier and not args.dry_run:
         log.warning("Sin TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID: solo guardo lo visto, no mando nada.")

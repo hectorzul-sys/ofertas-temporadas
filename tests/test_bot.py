@@ -103,6 +103,69 @@ class FiltroTest(unittest.TestCase):
         self.assertEqual(len(state["dia"]["candidatos"]), 3)   # lo que no cupo va al resumen
 
 
+class ListaTelegramTest(unittest.TestCase):
+    """Cosas apuntadas con /quiero (el contestador las guarda con grupos, rango, excluir y para)."""
+    TV = {"n": 1, "nombre": "Televisor 4k", "grupos": [["pantalla", "tv", "smart tv", "televisor"], ["4k", "uhd"]],
+          "min": 5000, "max": 9000, "excluir": ["soporte", "funda"], "para": "papá"}
+    VINIL = {"n": 2, "nombre": "Reproductor vinil", "grupos": [["tornamesa", "tocadiscos"]],
+             "min": None, "max": None, "excluir": [], "para": None}
+
+    def setUp(self):
+        self.cfg = load_config()
+
+    def offer(self, titulo, precio, n="1"):
+        return {"id": n, "titulo": titulo, "precio": precio, "grados": None, "tienda": "Amazon",
+                "categoria": None, "link": f"https://x/{n}"}
+
+    def test_match(self):
+        m = lambda t, p, item=self.TV: filtro.match_product(self.offer(t, p), [item], self.cfg["general"])
+        self.assertTrue(m("Amazon: Pantallas TCL 55 4K", 7999))     # plural
+        self.assertTrue(m("Samsung Smart TV UHD 50", 9000))          # en el límite
+        self.assertFalse(m("Pantalla TCL 55 4K", 9001))
+        self.assertFalse(m("Pantalla TCL 55 4K", 4999))
+        self.assertFalse(m("Pantalla TCL 55 4K", None))
+        self.assertFalse(m("Soporte para pantalla 4K", 6000))
+        self.assertFalse(m("TV Hisense 43 Full HD", 6000))
+        self.assertTrue(m("Tornamesa Audio-Technica", None, self.VINIL))   # sin rango: cualquier precio
+        self.assertFalse(m("Tornamesa reacondicionada", 900, self.VINIL))  # excluir general
+
+    def test_message_and_cap(self):
+        o = self.offer("Pantalla TCL 55 4K", 7999)
+        text = format_alert({"tipo": "producto", "categoria": None, "producto": self.TV, "oferta": o, "antes": None})
+        self.assertIn("TELEVISOR 4K A TU PRECIO", text)
+        self.assertIn("Buscabas de $5,000 a $9,000", text)
+        self.assertIn("Para papá", text)
+        text = format_alert({"tipo": "producto", "categoria": None, "producto": self.VINIL,
+                             "oferta": self.offer("Tornamesa X", 2000), "antes": None})
+        self.assertIn("REPRODUCTOR VINIL DE TU LISTA", text)
+        offers = [self.offer(f"Pantalla modelo {n} 4K", 6000 + n, str(n)) for n in range(5)]
+        state = {"enviados": {}, "dia": new_day(TODAY)}
+        alerts = plan_alerts(offers, self.cfg, [self.TV], state, TODAY, {})
+        self.assertEqual(len(alerts), 3)                      # avisos_por_producto
+        self.assertEqual(len(state["dia"]["candidatos"]), 2)  # el resto, al resumen
+        self.assertEqual(state["dia"]["candidatos"]["4"]["grupo"], "Televisor 4k (para papá)")
+
+    def test_old_list_still_works(self):
+        o = self.offer("Amazon: SSD Ejemplo 1 TB NVMe", 1050)
+        self.assertEqual(filtro.match_product(o, PRODUCTOS, self.cfg["general"])["nombre"], "SSD 1 TB")
+        text = format_alert({"tipo": "producto", "categoria": None, "producto": PRODUCTOS[0], "oferta": o, "antes": None})
+        self.assertIn("Querías pagar $1,100 o menos", text)
+
+    def test_remote_list_falls_back(self):
+        from unittest import mock
+        import requests
+        from src import main
+        state = {"lista_telegram": [self.VINIL]}
+        with mock.patch.dict(os.environ, {"CONTESTADOR_URL": "https://x", "WEBHOOK_SECRETO": "s"}):
+            with mock.patch.object(main.requests, "get", side_effect=requests.ConnectionError("caído")):
+                self.assertEqual(main.remote_products(state), [self.VINIL])  # usa la última guardada
+            resp = mock.Mock(**{"json.return_value": {"items": [self.TV, {"n": 9}]}})
+            with mock.patch.object(main.requests, "get", return_value=resp) as get:
+                self.assertEqual(main.remote_products(state), [self.TV])     # ignora lo que no trae grupos
+                self.assertEqual(get.call_args.kwargs["headers"]["X-Clave"], "s")
+        self.assertEqual(state["lista_telegram"], [self.TV])
+
+
 class HistorialYMensajesTest(unittest.TestCase):
     def test_seen_before_and_encryption(self):
         from cryptography.fernet import Fernet

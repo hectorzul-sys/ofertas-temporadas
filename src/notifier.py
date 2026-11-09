@@ -45,8 +45,25 @@ def keepa_url(offer, producto=None):
 
 def header(alert):
     if alert["tipo"] == "producto":
-        return f"🎯 <b>{html.escape(alert['producto']['nombre'].upper())} A TU PRECIO</b>"
+        p = alert["producto"]
+        tail = "DE TU LISTA" if "grupos" in p and p.get("min") is None and p.get("max") is None else "A TU PRECIO"
+        return f"🎯 <b>{html.escape(p['nombre'].upper())} {tail}</b>"
     return f"🏷️ <b>OFERTA · {html.escape(alert['categoria'].upper())}</b>"
+
+
+def wish_lines(p):
+    """Lo que pidió la persona: rango de precio y para quién (lista de Telegram) o precio objetivo (productos.yaml)."""
+    low, high = (p.get("min"), p.get("max")) if "grupos" in p else (None, p.get("precio_objetivo"))
+    lines = []
+    if low is not None and high is not None:
+        lines.append(f"🎯 Buscabas de {_money(low)} a {_money(high)}")
+    elif high is not None:
+        lines.append(f"🎯 Querías pagar {_money(high)} o menos")
+    elif low is not None:
+        lines.append(f"🎯 Buscabas desde {_money(low)}")
+    if p.get("para"):
+        lines.append(f"👤 Para {html.escape(p['para'])}")
+    return lines
 
 
 def format_alert(alert, caro=3000):
@@ -57,7 +74,7 @@ def format_alert(alert, caro=3000):
         price += f" · 🏬 {html.escape(o['tienda'])}"
     lines.append(price)
     if alert["tipo"] == "producto":
-        lines.append(f"🎯 Querías pagar {_money(alert['producto']['precio_objetivo'])} o menos")
+        lines += wish_lines(alert["producto"])
     if o["grados"] is not None:
         lines.append(f"🔥 {o['grados']}° en Promodescuentos")
     elif alert["tipo"] == "producto":

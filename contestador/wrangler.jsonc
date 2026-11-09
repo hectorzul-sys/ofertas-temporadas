@@ -3,9 +3,12 @@
   // Publicar: npx.cmd wrangler deploy (desde esta carpeta).
   // Secreto: npx.cmd wrangler secret put WEBHOOK_SECRETO (Claude lo pone; mismo valor que el secreto de GitHub).
   // Conectarlo al bot: en GitHub, Actions → "Ofertas de temporada" → Run workflow → modo "conectar".
+  // Secreto ADMIN: número de usuario de Telegram del dueño del bot (puede /permitir chats y borrar cualquier cosa).
+  // LISTA: la lista de compras (/quiero, /lista, /borrar) y los chats permitidos. KV gratis (1000 cambios al día).
   "name": "ofertas-familia-contestador",
   "main": "index.js",
   "compatibility_date": "2026-09-01",
   "workers_dev": true,
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  "kv_namespaces": [{ "binding": "LISTA", "id": "f70043ff4d244596a66015ccd0b65fec" }]
 }

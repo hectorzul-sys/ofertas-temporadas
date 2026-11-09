@@ -16,12 +16,13 @@ def normalize(text):
     return re.sub(r"\s+", " ", text.lower()).strip()
 
 
-def word_re(word):
-    """'1tb' también encuentra '1 TB'; 'hot wheels' también 'hotwheels'. Palabra completa."""
+def word_re(word, plural=False):
+    """'1tb' también encuentra '1 TB'; 'hot wheels' también 'hotwheels'. Palabra completa.
+    plural=True (lista de Telegram, igual que el contestador): 'pantalla' también encuentra 'pantallas'."""
     w = re.escape(normalize(word))
     w = re.sub(r"(\d)([a-z])", r"\1\\s*\2", w)
     w = w.replace(r"\ ", r"\s*")
-    return re.compile(rf"(?<![a-z0-9]){w}(?![a-z0-9])")
+    return re.compile(rf"(?<![a-z0-9]){w}{'(?:es|s)?' if plural else ''}(?![a-z0-9])")
 
 
 def has_any(text, words):
@@ -46,11 +47,28 @@ def match_product(offer, productos, general):
     if has_any(text, general.get("excluir")):
         return None
     for p in productos or []:
+        if "grupos" in p:  # apuntado desde Telegram (contestador/lista.js): rango y sinónimos
+            if not price_ok(offer["precio"], p.get("min"), p.get("max")):
+                continue
+            if any(word_re(x, True).search(text) for x in p.get("excluir") or []):
+                continue
+            if all(any(word_re(w, True).search(text) for w in g) for g in p["grupos"]):
+                return p
+            continue
         if offer["precio"] is None or offer["precio"] > p["precio_objetivo"]:
             continue
         if all(word_re(w).search(text) for w in p["palabras"]):
             return p
     return None
+
+
+def price_ok(precio, low, high):
+    """Sin rango vale cualquier precio; con rango, la oferta tiene que traer precio y caer dentro."""
+    if low is None and high is None:
+        return True
+    if precio is None:
+        return False
+    return (low is None or precio >= low) and (high is None or precio <= high)
 
 
 def classify(offer, cfg, productos=()):

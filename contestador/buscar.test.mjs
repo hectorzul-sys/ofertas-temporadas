@@ -42,3 +42,6 @@ test('respuestas', () => {
   assert.match(text, /Keepa/);
   assert.match(answer('<b>yates</b>', []), /Ahorita no hay ofertas de <b>&lt;b&gt;yates/);
 });
+
+// Las pruebas de la lista corren junto con estas (el robot de GitHub solo llama a este archivo).
+import './lista.test.mjs';

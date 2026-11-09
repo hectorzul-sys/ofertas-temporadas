@@ -17,7 +17,8 @@ general:
   temporadas:                   # en estas fechas sube el tope
     - {nombre: Buen Fin, desde: 2026-11-13, hasta: 2026-11-17}
     - {nombre: Black Friday y Cyber Monday, desde: 2026-11-27, hasta: 2026-11-30}
-  no_repetir_dias: 7            # la misma oferta no vuelve en 7 días, salvo que baje 5 % o más
+  avisos_por_producto: 3        # de la lista (/quiero): al momento como mucho 3 al día por cosa; el resto, al resumen
+  no_repetir_dias: 7           # la misma oferta no vuelve en 7 días, salvo que baje 5 % o más
   baja_para_repetir: 5          # %
   resumen_hora: "21:00"
   zona: America/Mexico_City
