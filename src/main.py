@@ -189,9 +189,8 @@ def set_webhook(url):
         calls += [
             ("setMyCommands", {"commands": [
                 {"command": "buscar", "description": "Busca ofertas: /buscar televisores"},
-                {"command": "quiero", "description": "Apunta algo: /quiero televisor 4k de 5000 a 9000"},
-                {"command": "lista", "description": "Lo que tenemos apuntado"},
-                {"command": "borrar", "description": "Quita algo de la lista: /borrar 3"},
+                {"command": "quiero", "description": "Apunta algo que quieres (te pregunto con botones)"},
+                {"command": "lista", "description": "Lo que tenemos apuntado (con botón para borrar)"},
                 {"command": "ayuda", "description": "Qué sé hacer"},
                 {"command": "id", "description": "Número de este chat (para Claude)"},
             ]}),
@@ -204,6 +203,13 @@ def set_webhook(url):
         resp = requests.post(f"{api}/{method}", json=body, timeout=30)
         if not resp.ok:
             sys.exit(f"Telegram respondió {resp.status_code} en {method}: {resp.text[:300]}")
+    if url:  # el contestador usa la llave solo para quitar el "cargando" de los botones del cuestionario
+        try:
+            resp = requests.post(f"{url.rstrip('/')}/llave", json={"token": token}, timeout=30,
+                                 headers={"X-Clave": payload["secret_token"]})
+            print("Llave entregada al contestador." if resp.ok else f"El contestador no aceptó la llave ({resp.status_code}).")
+        except requests.RequestException as err:
+            print(f"No pude entregar la llave al contestador: {str(err)[:120]}")
     print("Contestador conectado (con menú y descripción)." if url else "Contestador desconectado.")
 
 

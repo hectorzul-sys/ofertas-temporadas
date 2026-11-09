@@ -45,3 +45,4 @@ test('respuestas', () => {
 
 // Las pruebas de la lista corren junto con estas (el robot de GitHub solo llama a este archivo).
 import './lista.test.mjs';
+import './cuestionario.test.mjs';

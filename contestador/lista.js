@@ -61,17 +61,23 @@ export function parseWish(text) {
   s = s.replace(VERBO, '').replace(/^(?:un|una|unos|unas)\s+/, '').replace(/[,;:]+$/, '').trim();
   const grupos = terms(s);
   if (!grupos.length) return null;
-  const pedido = grupos.flat().map(normalize);
-  const excluir = [...new Set([...sin, ...ACCESORIOS.filter((a) => !pedido.some((w) => w.includes(a) || a.includes(w)))])];
+  const excluir = excluirPara(grupos, sin);
   const nombre = s.split(' ').map((w) => (corregir(normalize(w)) !== normalize(w) ? corregir(normalize(w)) : w)).join(' ').slice(0, 60);
   return { nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1), grupos, min, max, excluir, para };
+}
+
+// Accesorios de siempre (salvo los que la persona pidió) más lo que dijo con "sin …" o lo que trae su categoría.
+export function excluirPara(grupos, extra = []) {
+  const pedido = grupos.flat().map(normalize);
+  return [...new Set([...extra, ...ACCESORIOS.filter((a) => !pedido.some((w) => w.includes(a) || a.includes(w)))])];
 }
 
 export function matchWish(offer, item) {
   const t = normalize(offer.title || offer.titulo);
   const precio = offer.precio;
   if (item.max != null && (precio == null || precio > item.max)) return false;
-  if (item.min != null && (precio == null || precio < item.min)) return false;
+  const low = item.min ?? item.piso;
+  if (low != null && (precio == null || precio < low)) return false;
   if ((item.excluir || []).some((x) => wordRe(x).test(t))) return false;
   return item.grupos.every((g) => g.some((w) => wordRe(w).test(t)));
 }
@@ -90,7 +96,8 @@ export function priceText(item) {
 export function describe(item) {
   const head = [`<b>#${item.n} ${esc(item.nombre)}</b>`, priceText(item)];
   if (item.para) head.push(`👤 para ${esc(item.para)}`);
-  const sin = (item.excluir || []).filter((x) => !ACCESORIOS.includes(x));
+  // Solo lo que la persona dijo con "sin …"; lo que excluye una categoría del cuestionario no se enseña.
+  const sin = item.categoria ? [] : (item.excluir || []).filter((x) => !ACCESORIOS.includes(x));
   const lines = [head.join(' · '), `    🔎 busco: ${esc(item.grupos.map((g) => g.slice(0, 3).join('/')).join(' + '))}`];
   if (sin.length) lines.push(`    🚫 sin: ${esc(sin.join(', '))}`);
   return lines.join('\n');

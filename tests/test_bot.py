@@ -128,6 +128,10 @@ class ListaTelegramTest(unittest.TestCase):
         self.assertFalse(m("TV Hisense 43 Full HD", 6000))
         self.assertTrue(m("Tornamesa Audio-Technica", None, self.VINIL))   # sin rango: cualquier precio
         self.assertFalse(m("Tornamesa reacondicionada", 900, self.VINIL))  # excluir general
+        tele = {**self.TV, "min": None, "max": None, "piso": 2000, "categoria": "tv"}   # cuestionario, "sin límite"
+        self.assertTrue(m("Pantalla Sony 4K 65", 32999, tele))
+        self.assertFalse(m("Control remoto pantalla 4K", 299, tele))          # el piso frena lo barato
+        self.assertTrue(m("Tornamesa X", None, {**self.VINIL, "piso": None}))
 
     def test_message_and_cap(self):
         o = self.offer("Pantalla TCL 55 4K", 7999)

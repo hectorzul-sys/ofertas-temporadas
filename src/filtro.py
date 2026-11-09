@@ -48,7 +48,8 @@ def match_product(offer, productos, general):
         return None
     for p in productos or []:
         if "grupos" in p:  # apuntado desde Telegram (contestador/lista.js): rango y sinónimos
-            if not price_ok(offer["precio"], p.get("min"), p.get("max")):
+            low = p.get("min") if p.get("min") is not None else p.get("piso")  # piso: evita accesorios baratos
+            if not price_ok(offer["precio"], low, p.get("max")):
                 continue
             if any(word_re(x, True).search(text) for x in p.get("excluir") or []):
                 continue

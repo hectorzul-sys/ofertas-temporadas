@@ -5,7 +5,11 @@
 // El bot de Python la lee cada hora en GET /lista con la cabecera X-Clave.
 // Secretos: WEBHOOK_SECRETO (el mismo que el secreto de GitHub con ese nombre; Telegram lo manda en cada mensaje)
 // y ADMIN (número de usuario de Telegram de quien manda en el bot: puede /permitir chats y borrar cualquier cosa).
+// El cuestionario con botones (/quiero solo) vive en cuestionario.js y catalogo.js: cada botón lleva lo elegido.
+// Solo "Otra cosa" en privado deja una marca en KV ("cq:<chat>:<usuario>", 2 h) para tomar el siguiente texto. La llave del bot (para quitar el "cargando" de los botones) la manda
+// el propio bot en el modo "conectar" a POST /llave y se guarda en KV ("llave"); sin ella todo funciona igual.
 import { FEEDS, answer, formatLines, merge, parse, search } from './buscar.js';
+import { inicio, pantalla, tocar } from './cuestionario.js';
 import { describe, matchWish, parseWish } from './lista.js';
 
 const UA = 'ofertas-temporadas/1.0 (bot familiar personal, contesta preguntas; +https://github.com/hectorzul-sys/ofertas-temporadas)';
@@ -14,8 +18,8 @@ const EJEMPLO = '<b>/quiero televisor 4k de 5000 a 9000</b>';
 const AYUDA = '👋 Soy el bot de ofertas de la familia.\n\n' +
   '• Escríbeme lo que buscas: <b>televisores</b>, <b>freidora</b>, <b>ps5</b>…\n' +
   '  En un grupo: <b>/buscar televisores</b>.\n' +
-  `• Apunta lo que quieres y te aviso cuando salga: ${EJEMPLO}\n` +
-  '  También: <b>hasta 9000</b>, <b>sin curvo</b>, <b>para papá</b>.\n' +
+  '• Apunta lo que quieres y te aviso cuando salga: escribe <b>/quiero</b> y te hago unas preguntas con botones.\n' +
+  `  O dilo de una vez: ${EJEMPLO} (también <b>sin curvo</b>, <b>para papá</b>).\n` +
   '• /lista muestra lo apuntado · <b>/borrar 3</b> quita el número 3.\n' +
   '• Te mando avisos de electrodomésticos y tecnología, y un resumen a las 21:00.\n' +
   '• /id te dice el número de este chat (para Claude).';
@@ -33,11 +37,22 @@ async function offers() {
   return merge(lists);
 }
 
-function reply(chatId, text) {
-  return new Response(JSON.stringify({
-    method: 'sendMessage', chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true,
-  }), { headers: { 'Content-Type': 'application/json' } });
+function telegram(body) {
+  return new Response(JSON.stringify({ parse_mode: 'HTML', disable_web_page_preview: true, ...body }),
+    { headers: { 'Content-Type': 'application/json' } });
 }
+const markup = (keyboard) => (keyboard && keyboard.length ? { reply_markup: { inline_keyboard: keyboard } } : {});
+function reply(chatId, text, keyboard) {
+  return telegram({ method: 'sendMessage', chat_id: chatId, text, ...markup(keyboard) });
+}
+function edit(chatId, messageId, text, keyboard) {
+  return telegram({ method: 'editMessageText', chat_id: chatId, message_id: messageId, text, ...markup(keyboard) });
+}
+
+const quizKey = (msg) => `cq:${msg.chat.id}:${msg.from?.id}`;
+const getQuiz = (env, msg) => env.LISTA.get(quizKey(msg), 'json');
+const putQuiz = (env, msg, state) => env.LISTA.put(quizKey(msg), JSON.stringify(state), { expirationTtl: 7200 });
+const dropQuiz = (env, msg) => env.LISTA.delete(quizKey(msg));
 
 const getLista = async (env) => (await env.LISTA.get('lista', 'json')) || { sig: 1, items: [] };
 const putLista = (env, lista) => env.LISTA.put('lista', JSON.stringify(lista));
@@ -55,6 +70,11 @@ export async function quiero(env, msg, text) {
   if (!(await allowed(env, msg))) return NO_PERMITIDO;
   const item = parseWish(text);
   if (!item) return `Dime qué quieres, por ejemplo: ${EJEMPLO}`;
+  return apuntar(env, msg, item);
+}
+
+// Guarda una cosa (venga del texto o del cuestionario) y enseña lo que ya haya ahorita.
+export async function apuntar(env, msg, item) {
   const lista = await getLista(env);
   if (lista.items.length >= MAX_COSAS) return `La lista ya tiene ${MAX_COSAS} cosas. Borra alguna con <b>/borrar número</b>.`;
   Object.assign(item, {
@@ -76,6 +96,14 @@ export async function verLista(env, msg) {
   const { items } = await getLista(env);
   if (!items.length) return `📝 La lista está vacía. Apunta algo: ${EJEMPLO}`;
   return `📝 <b>Lista de compras</b> (${items.length})\n\n${items.map(describe).join('\n\n')}\n\n<i>Para quitar una: /borrar número</i>`;
+}
+
+// Un 🗑️ por cada cosa que esta persona puede borrar (las suyas; el dueño, todas).
+export async function botonesLista(env, msg) {
+  const { items } = await getLista(env);
+  const own = items.filter((i) => isAdmin(env, msg) || i.de === String(msg.from?.id));
+  const buttons = own.map((i) => ({ text: `🗑️ #${i.n}`, callback_data: `l:b:${i.n}` }));
+  return buttons.reduce((out, b, k) => (k % 4 ? out[out.length - 1].push(b) : out.push([b]), out), []);
 }
 
 export async function borrar(env, msg, rest) {
@@ -102,19 +130,69 @@ export async function permitir(env, msg) {
   return '✅ Este chat ya puede usar la lista: /quiero, /lista y /borrar.';
 }
 
+// Un toque en un botón: avanzar el cuestionario o borrar desde /lista. Responde editando el mismo mensaje.
+export async function boton(env, cq) {
+  const msg = { from: cq.from, chat: cq.message.chat };
+  const chatId = cq.message.chat.id;
+  const messageId = cq.message.message_id;
+  const data = cq.data || '';
+  if (!(await allowed(env, msg))) return edit(chatId, messageId, NO_PERMITIDO);
+
+  if (data.startsWith('l:b:')) {
+    const done = await borrar(env, msg, data.slice(4));
+    const text = `${done}\n\n${await verLista(env, msg)}`;
+    return edit(chatId, messageId, text, await botonesLista(env, msg));
+  }
+  if (!data.startsWith('q:')) return new Response('ok');
+  const r = tocar(data);
+  if (r.cancelado) return edit(chatId, messageId, 'Listo, no apunté nada. Cuando quieras: /quiero');
+  if (r.otra) {
+    if (cq.message.chat.type !== 'private') {
+      return edit(chatId, messageId, `✏️ Escribe /quiero y lo que buscas, por ejemplo: ${EJEMPLO}`);
+    }
+    await putQuiz(env, msg, { escribir: true });
+    return edit(chatId, messageId, '✏️ Escríbeme qué buscas, como lo dirías. Por ejemplo: <b>tornamesa hasta 3000</b> o ' +
+      '<b>taladro dewalt 20v para papá</b>.');
+  }
+  if (r.item) return edit(chatId, messageId, await apuntar(env, msg, r.item));
+  const p = pantalla(r.state);
+  return edit(chatId, messageId, p.text, p.keyboard);
+}
+
+// Quita el "cargando" del botón que tocaron (necesita la llave del bot; si no está, no pasa nada).
+async function soltarBoton(env, cq) {
+  const token = await env.LISTA.get('llave');
+  if (!token) return;
+  await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ callback_query_id: cq.id }),
+  }).catch(() => {});
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const clave = request.headers.get('X-Clave');
     if (request.method === 'GET' && url.pathname === '/lista') {
-      if (!env.WEBHOOK_SECRETO || request.headers.get('X-Clave') !== env.WEBHOOK_SECRETO) return new Response('no', { status: 401 });
+      if (!env.WEBHOOK_SECRETO || clave !== env.WEBHOOK_SECRETO) return new Response('no', { status: 401 });
       const { items } = await getLista(env);
       return Response.json({ items });
+    }
+    if (request.method === 'POST' && url.pathname === '/llave') {
+      if (!env.WEBHOOK_SECRETO || clave !== env.WEBHOOK_SECRETO) return new Response('no', { status: 401 });
+      const { token } = await request.json().catch(() => ({}));
+      if (!/^\d+:[\w-]{20,}$/.test(token || '')) return new Response('llave rara', { status: 400 });
+      await env.LISTA.put('llave', token);
+      return new Response('ok');
     }
     if (request.method !== 'POST') return new Response('ok');
     if (!env.WEBHOOK_SECRETO || request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== env.WEBHOOK_SECRETO) {
       return new Response('no', { status: 401 });
     }
     const update = await request.json().catch(() => ({}));
+    if (update.callback_query?.message) {
+      ctx?.waitUntil(soltarBoton(env, update.callback_query));
+      return boton(env, update.callback_query);
+    }
     const msg = update.message;
     if (!msg || !msg.text) return new Response('ok');
     const chatId = msg.chat.id;
@@ -126,8 +204,13 @@ export default {
       const [, name, rest] = cmd;
       if (name === 'start' || name === 'ayuda' || name === 'help') return reply(chatId, AYUDA);
       if (name === 'id') return reply(chatId, `🆔 Este chat es <code>${chatId}</code>`);
-      if (name === 'quiero' || name === 'apunta') return reply(chatId, await quiero(env, msg, rest));
-      if (name === 'lista') return reply(chatId, await verLista(env, msg));
+      if (name === 'quiero' || name === 'apunta') {
+        if (rest.trim()) return reply(chatId, await quiero(env, msg, rest));
+        if (!(await allowed(env, msg))) return reply(chatId, NO_PERMITIDO);
+        const p = inicio();
+        return reply(chatId, p.text, p.keyboard);
+      }
+      if (name === 'lista') return reply(chatId, await verLista(env, msg), await botonesLista(env, msg));
       if (name === 'borrar') return reply(chatId, await borrar(env, msg, rest));
       if (name === 'permitir') return reply(chatId, await permitir(env, msg));
       if (name !== 'buscar') return isPrivate ? reply(chatId, AYUDA) : new Response('ok');
@@ -135,8 +218,14 @@ export default {
       if (!text) return reply(chatId, 'Dime qué buscar, por ejemplo: <b>/buscar televisores</b>');
     } else if (!isPrivate) {
       return new Response('ok'); // en grupos solo contesta comandos, para no meterse en la plática
+    } else if (/^(?:quiero|apuntar)$/i.test(text)) {
+      const p = inicio(); // "quiero" solo, en privado: el cuestionario
+      return (await allowed(env, msg)) ? reply(chatId, p.text, p.keyboard) : reply(chatId, NO_PERMITIDO);
     } else if (/^(?:quiero|quisiera|ap[uú]nta(?:me)?|anota)\s/i.test(text)) {
       return reply(chatId, await quiero(env, msg, text)); // en privado basta con "quiero televisor 4k"
+    } else if ((await getQuiz(env, msg))?.escribir) {
+      await dropQuiz(env, msg); // tocó "Otra cosa" y ahora lo escribe
+      return reply(chatId, await quiero(env, msg, text));
     }
 
     const results = search(await offers(), text);
